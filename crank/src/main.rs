@@ -1,26 +1,26 @@
-use reqwest::Url;
-use serde_json::Value;
+// use reqwest::Url;
+// use serde_json::Value;
 use tokio::{time::Duration, time::sleep};
 
-fn main() {
-    tokio::runtime::Runtime::new().unwrap().block_on(async {
-        let url = Url::parse(
-            "https://lite-api.jup.ag/price/v3?ids=So11111111111111111111111111111111111111112",
-        )
-        .unwrap();
+// use std::time::{SystemTime, UNIX_EPOCH};
+pub mod engine;
+pub mod execution;
+pub mod prices;
+pub use engine::trigger_engine;
+pub use execution::execution_worker;
+pub use prices::price_ingestor;
 
-        loop {
-            // fetch new data EACH iteration
-            let response = reqwest::get(url.clone()).await.unwrap();
-            let data: Value = response.json().await.unwrap();
+#[tokio::main]
+async fn main() {
+    let (price_tx, price_rx) = tokio::sync::mpsc::channel(32);
+    let (exec_tx, exec_rx) = tokio::sync::mpsc::channel(8);
 
-            let usd_price = data["So11111111111111111111111111111111111111112"]["usdPrice"]
-                .as_f64()
-                .unwrap();
+    tokio::spawn(price_ingestor(price_tx));
+    tokio::spawn(trigger_engine(price_rx, exec_tx));
+    tokio::spawn(execution_worker(exec_rx));
 
-            println!("USD Price: {}", usd_price);
-
-            sleep(Duration::from_millis(10)).await;
-        }
-    });
+    // keep main alive
+    loop {
+        sleep(Duration::from_secs(60)).await;
+    }
 }
