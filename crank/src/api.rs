@@ -24,13 +24,15 @@ async fn create_intent(Json(intent): Json<Intent>) -> Json<String> {
     let pool = sqlx::PgPool::connect("postgres://postgres:postgres@localhost:5432/intents")
         .await
         .unwrap();
-
-    let intent_id: i64 =
-        sqlx::query_scalar("INSERT INTO intents (trigger_price) VALUES ($1) RETURNING id")
-            .bind(intent.trigger_price)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let status = "pending";
+    let intent_id: i64 = sqlx::query_scalar(
+        "INSERT INTO intents (trigger_price, status) VALUES ($1, $2) RETURNING id",
+    )
+    .bind(intent.trigger_price)
+    .bind(status)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
 
     Json(format!("Intent created with ID {}", intent_id))
 }
