@@ -28,14 +28,14 @@ impl std::str::FromStr for Status {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Copy)]
 pub struct Intent {
     pub id: u32,
-    pub trigger_price: u64, // Stored in basis points
+    pub trigger_price: u64,
     pub status: Status,
 }
 
 // Database representation
 #[derive(Debug, sqlx::FromRow)]
 pub struct IntentRow {
-    pub id: i64, // Changed from i32 to i64 to match BIGINT
+    pub id: i64,
     pub trigger_price: sqlx::types::Decimal,
     pub status: String,
 }
@@ -218,7 +218,7 @@ pub async fn update_intent_status(
 
     sqlx::query("UPDATE intents SET status = $1 WHERE id = $2")
         .bind(status_str)
-        .bind(intent_id as i64) // Changed from i32 to i64
+        .bind(intent_id as i64)
         .execute(pool)
         .await?;
 
@@ -228,10 +228,10 @@ pub async fn update_intent_status(
 pub async fn trigger_engine(
     mut rx: mpsc::Receiver<PriceEvent>,
     exec_tx: mpsc::Sender<TriggerEvent>,
-    mut reload_rx: mpsc::Receiver<()>, // Signal to reload intents
+    mut reload_rx: mpsc::Receiver<()>,
     pool: sqlx::PgPool,
 ) {
-    let mut engine = IntentEngine::new(50); // 0.05 tolerance = 50 basis points
+    let mut engine = IntentEngine::new(50); // 0.05 tolerance = 50 basis points (0.05 * 1000 = 50)
 
     // Load intents from database
     println!("Loading intents from database...");
@@ -251,7 +251,6 @@ pub async fn trigger_engine(
         engine.get_pending_count()
     );
 
-    // --- main loop with select! for multiple channels ---
     loop {
         tokio::select! {
             Some(event) = rx.recv() => {
@@ -261,13 +260,12 @@ pub async fn trigger_engine(
 
                 for intent in triggered {
                     println!(
-                        "✓ Triggering BUY intent {} at price {} (target was {})",
+                        "Triggering BUY intent {} at price {} (target was {})",
                         intent.id,
                         event.price,
                         IntentEngine::from_bps(intent.trigger_price)
                     );
 
-                    // Update database status to triggered
                     if let Err(e) = update_intent_status(&pool, intent.id, Status::Triggered).await {
                         eprintln!("Failed to update intent {} status in DB: {}", intent.id, e);
                     }
@@ -290,12 +288,12 @@ pub async fn trigger_engine(
             }
 
             Some(_) = reload_rx.recv() => {
-                println!("🔄 Reloading intents from database...");
+                println!("Reloading intents from database");
                 match load_pending_intents(&pool).await {
                     Ok(rows) => {
                         engine.load_intents(rows).await;
                         println!(
-                            "✓ Reload complete. Now tracking {} pending intents",
+                            "Reload complete. Now tracking {} pending intents",
                             engine.get_pending_count()
                         );
                     }

@@ -1,6 +1,6 @@
 [workspace]
-members = [ "crank",
-    "programs/*"
+members = [ "engine",
+    "autobuy/programs/*",
 ]
 resolver = "2"
 

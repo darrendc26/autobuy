@@ -1,3 +1,10 @@
+**To run the project**
+
+1. Install Rust
+2. Install Postgres via Docker
+3. Clone the repo
+4. Run `cargo run`
+
 **Run Postgres in Docker**
 docker run -d \
   --name postgres \
@@ -8,3 +15,10 @@ docker run -d \
   -v $(pwd)/init.sql:/docker-entrypoint-initdb.d/init.sql \
   -v pgdata:/var/lib/postgresql/data \
   postgres:16
+
+  *Connection string for Postgres* 
+ `postgres://postgres:postgres@localhost:5432/intents`
+
+ API server: http://localhost:3000/
+
+ The onchain vault contract is a WIP.
