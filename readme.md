@@ -6,6 +6,7 @@
 4. Run `cargo run`
 
 **Run Postgres in Docker**
+
 docker run -d \
   --name postgres \
   -e POSTGRES_USER=postgres \
